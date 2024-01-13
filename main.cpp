@@ -14,7 +14,7 @@ struct cell{
 void printField(cell field[5][5]){
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
-            cout << field[i][j].number << " ";
+            cout << field[i][j].number << "    ";
         }
         cout << endl;
     }
@@ -70,11 +70,8 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
             randomCell = rand() % freeCells.size();
         }
         if(!field[freeCells[randomCell].i][freeCells[randomCell].j].filled){
-            //freeCells[randomCell].number = newNumber;
-            //freeCells[randomCell].filled = true;
             field[freeCells[randomCell].i][freeCells[randomCell].j].number = newNumber;
             field[freeCells[randomCell].i][freeCells[randomCell].j].filled = true;
-            //field[freeCells[randomCell].i][freeCells[randomCell].j] = freeCells[randomCell];
             checkFreeCells(freeCells);
             addFreeCells(field,freeCells);
             added = true;
@@ -82,8 +79,6 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
             added = false;
         }
     }
-    //checkFreeCells(freeCells);
-    //addFreeCells(field, freeCells);
 }
 
 void moveUp(cell field[5][5], vector<cell>& freeCells){
@@ -202,11 +197,57 @@ void moveRight(cell field[5][5], vector<cell>& freeCells){
     addNumber(field, freeCells);
     printField(field);
 }
-
+bool checkMove(cell field[5][5], vector<cell>& freeCells){
+    if (freeCells.empty()){
+        for (int i = 0; i < 5; i++){
+            for (int j = 0; j < 5; j++){
+                if ((i - 1 >= 0 && field[i][j].number == field[i - 1][j].number) ||
+                    (i + 1 < 5 && field[i][j].number == field[i + 1][j].number) ||
+                    (j - 1 >= 0 && field[i][j].number == field[i][j - 1].number) ||
+                    (j + 1 < 5 && field[i][j].number == field[i][j + 1].number)) {
+                    return true;
+                }
+            }
+        }
+        cout << "You are loser" << endl;
+        return false;
+    }else{
+        return true;
+    }
+}
+bool checkWin(cell field[5][5]){
+    bool isWin = false;
+    for(int i = 0; i < 5; i++){
+        for(int j = 0; j < 5; j++){
+            if(field[i][j].number == 2048){
+                isWin = true;
+            }
+        }
+    }
+    return isWin;
+}
+void message(bool state){
+    if(state){
+        cout << "You are winner" << endl;
+    }else {
+        cout << "You are loser" << endl;
+    }
+}
 void move(cell field[5][5], vector<cell>& freeCells){
     while (true) {
         string input;
-        getline(cin, input);
+        bool isWin = checkWin(field);
+        bool moveIsPossible = checkMove(field,freeCells);
+        if(isWin){
+            message(isWin);
+            break;
+        }else if(moveIsPossible){
+            getline(cin, input);
+        }
+        else {
+            message(moveIsPossible);
+            break;
+        }
 
         if (input == "end") {
             break;
@@ -222,11 +263,8 @@ void move(cell field[5][5], vector<cell>& freeCells){
 
     }
 }
-bool checkMove(cell field[5][5], vector<cell>& freeCells){
 
-}
-bool checkWin(){}
-void message(){}
+
 
 
 void game(){
