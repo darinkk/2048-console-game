@@ -2,6 +2,7 @@
 #include <math.h>
 #include <random>
 #include <vector>
+#include <algorithm>
 using namespace std;
 
 struct cell{
@@ -35,6 +36,9 @@ bool isInVector(int n, int b,vector<cell>& freeCells){
     return isInVector;
 }
 void checkFreeCells(vector<cell>& freeCells){
+    freeCells.erase(remove_if(freeCells.begin(), freeCells.end(),
+                              [](const cell& c) { return c.filled; }),
+                    freeCells.end());
     bool isOllFree = false;
     if (freeCells.size() > 1){
         while (!isOllFree){
@@ -53,7 +57,7 @@ void checkFreeCells(vector<cell>& freeCells){
 void addFreeCells(cell field[5][5], vector<cell>& freeCells){
     for (int a = 0; a <= 4; a++){
         for(int g = 0; g <= 4; g++){
-            if(field[a][g].filled){
+            if(!field[a][g].filled){
                 if(!isInVector(a,g,freeCells)){
                     freeCells.push_back(field[a][g]);
                 }
@@ -197,7 +201,14 @@ void moveRight(cell field[5][5], vector<cell>& freeCells){
     addNumber(field, freeCells);
     printField(field);
 }
+
 bool checkMove(cell field[5][5], vector<cell>& freeCells){
+//    int countzero = 0;
+//    for(int k = 0; k < 5; k++){
+//        for(int m = 0; m < 5; m++){
+//            countzero++;
+//        }
+//    }
     if (freeCells.empty()){
         for (int i = 0; i < 5; i++){
             for (int j = 0; j < 5; j++){
@@ -260,8 +271,13 @@ void move(cell field[5][5], vector<cell>& freeCells){
         }else if(input == "A" || input == "a"){
             moveLeft(field,freeCells);
         }
-
+        cout << freeCells.size() << endl;
+        for(int i = 0; i<freeCells.size();i++){
+            cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
+        }
+        cout << endl;
     }
+
 }
 
 
@@ -292,6 +308,11 @@ void game(){
     addFreeCells(field,freeCells);
     addNumber(field, freeCells);
     printField(field);
+    cout << freeCells.size() << endl;
+    for(int i = 0; i<freeCells.size();i++){
+        cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
+    }
+    cout << endl;
     move(field,freeCells);
 }
 
