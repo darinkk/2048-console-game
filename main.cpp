@@ -3,6 +3,10 @@
 #include <random>
 #include <vector>
 #include <algorithm>
+#include <string>
+#include <map>
+#include <cstdlib> //Для очищення
+
 using namespace std;
 
 struct cell{
@@ -10,9 +14,53 @@ struct cell{
     int i;
     int j;
     bool filled;
+    map<string, cell*> neighbors; //Додано мап з сусідами
 };
 
+//Нова функція initialization
+void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
+    for (int i = 0; i < 5; i++) { 
+        for (int j = 0; j < 5; j++) {
+            field[i][j].number = 0;
+            field[i][j].i = i;
+            field[i][j].j = j;
+            field[i][j].filled = false;
+            freeCells.push_back(field[i][j]);
+
+            //field[i][j].neighbors["UP"] = [i,j, &field]() {if (i - 1 >= 0) { return &field[i - 1][j]; } else { return nullptr; } };
+            if (i - 1 >= 0) { field[i][j].neighbors["UP"] = &field[i - 1][j]; }
+            else { field[i][j].neighbors["UP"] = nullptr; }
+
+            if(i+1 <= 4){ field[i][j].neighbors["DOWN"] = &field[i + 1][j]; }
+            else { field[i][j].neighbors["DOWN"] = nullptr; }
+
+            if (j - 1 >= 0) { field[i][j].neighbors["LEFT"] = &field[i][j - 1]; }
+            else { field[i][j].neighbors["LEFT"] = nullptr; }
+
+            if (j + 1 <= 4) { field[i][j].neighbors["RIGHT"] = &field[i][j + 1]; }
+            else { field[i][j].neighbors["RIGHT"] = nullptr; } 
+        }
+    }
+    //Перевірка
+    //cout << endl << field[1][3].neighbors["UP"]->i << field[1][3].neighbors["UP"]->j;
+    //cout << endl << field[1][3].neighbors["DOWN"]->i << field[1][3].neighbors["DOWN"]->j;
+    //cout << endl << field[1][3].neighbors["LEFT"]->i << field[1][3].neighbors["LEFT"]->j;
+    //cout << endl << field[1][3].neighbors["RIGHT"]->i << field[1][3].neighbors["RIGHT"]->j << endl;
+}
+
+//Нова функція printRules та трохи змінена printField
+void printRules() {
+    cout << "Enter: " << endl
+        << "    W - Move Up" << endl
+        << "    S - Move Down" << endl
+        << "    A - Move Left" << endl
+        << "    D - Move Right" << endl
+        << "    end - To Quit" << endl;
+    cout << endl;
+}
 void printField(cell field[5][5]){
+    system("cls");
+    printRules();
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
             cout << field[i][j].number << "    ";
@@ -21,6 +69,7 @@ void printField(cell field[5][5]){
     }
     cout << endl;
 }
+
 int createNumber(){
     int randomNumber = (rand() % 2 + 1) * 2;
     return randomNumber;
@@ -31,14 +80,13 @@ bool isInVector(int n, int b,vector<cell>& freeCells){
         if(k.i == n && k.j == b){
             isInVector = true;
             break;
-        }else{};
+        }
     }
     return isInVector;
 }
 void checkFreeCells(vector<cell>& freeCells){
     freeCells.erase(remove_if(freeCells.begin(), freeCells.end(),
-                              [](const cell& c) { return c.filled; }),
-                    freeCells.end());
+                              [](const cell& c) { return c.filled; }), freeCells.end());
     bool isOllFree = false;
     if (freeCells.size() > 1){
         while (!isOllFree){
@@ -79,11 +127,10 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
             checkFreeCells(freeCells);
             addFreeCells(field,freeCells);
             added = true;
-        }else{
-            added = false;
         }
     }
 }
+
 
 void moveUp(cell field[5][5], vector<cell>& freeCells){
     for (int i = 1; i < 5; i++) {
@@ -271,48 +318,28 @@ void move(cell field[5][5], vector<cell>& freeCells){
         }else if(input == "A" || input == "a"){
             moveLeft(field,freeCells);
         }
-        cout << freeCells.size() << endl;
-        for(int i = 0; i<freeCells.size();i++){
-            cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
-        }
-        cout << endl;
+        //Закоментований шматочок виводить сміття, яке потрібно було для перевірки
+        //cout << freeCells.size() << endl;
+        //for(int i = 0; i<freeCells.size();i++){
+        //    cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
+        //}
+        //cout << endl;
     }
 
 }
 
 
-
-
 void game(){
-    cout << "Enter: " << endl
-         <<"    W - Move Up" << endl
-         <<"    S - Move Down" << endl
-         <<"    A - Move Left" << endl
-         <<"    D - Move Right" << endl
-         <<"    end - To Quit" << endl;
     cell field[5][5];
     vector<cell> freeCells;
-    for (int i = 0; i < 5; i++){
-        for(int j = 0;j < 5; j++){
-            field[i][j].number = 0;
-            field[i][j].i = i;
-            field[i][j].j = j;
-            field[i][j].filled = false;
-            freeCells.push_back(field[i][j]);
-        }
-    }
-    printField(field);
-    field[1][2].number = 2;
+    initialization(field, freeCells); //Додана функція ініціалізації поля (а саме клітинок у ньому)
+    field[1][2].number = 2; //Перше значення завжди в одному й тому ж місці і завжди 2 (спробуй виправити)
     field[1][2].filled = true;
     checkFreeCells(freeCells);
     addFreeCells(field,freeCells);
     addNumber(field, freeCells);
     printField(field);
-    cout << freeCells.size() << endl;
-    for(int i = 0; i<freeCells.size();i++){
-        cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
-    }
-    cout << endl;
+
     move(field,freeCells);
 }
 
