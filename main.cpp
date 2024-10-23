@@ -9,12 +9,14 @@
 
 using namespace std;
 
+enum direction { UP, DOWN, LEFT, RIGHT };
+
 struct cell{
     int number;
     int i;
     int j;
     bool filled;
-    map<string, cell*> neighbors; //Додано мап з сусідами
+    map<direction, cell*> neighbors; //Додано мап з сусідами
 };
 
 //Нова функція initialization
@@ -27,18 +29,18 @@ void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
             field[i][j].filled = false;
             freeCells.push_back(field[i][j]);
 
-            //field[i][j].neighbors["UP"] = [i,j, &field]() {if (i - 1 >= 0) { return &field[i - 1][j]; } else { return nullptr; } };
-            if (i - 1 >= 0) { field[i][j].neighbors["UP"] = &field[i - 1][j]; }
-            else { field[i][j].neighbors["UP"] = nullptr; }
+            //field[i][j].neighbors[UP] = [i,j, &field]() {if (i - 1 >= 0) { return &field[i - 1][j]; } else { return nullptr; } };
+            if (i - 1 >= 0) { field[i][j].neighbors[UP] = &field[i - 1][j]; }
+            else { field[i][j].neighbors[UP] = nullptr; }
 
-            if(i+1 <= 4){ field[i][j].neighbors["DOWN"] = &field[i + 1][j]; }
-            else { field[i][j].neighbors["DOWN"] = nullptr; }
+            if(i+1 <= 4){ field[i][j].neighbors[DOWN] = &field[i + 1][j]; }
+            else { field[i][j].neighbors[DOWN] = nullptr; }
 
-            if (j - 1 >= 0) { field[i][j].neighbors["LEFT"] = &field[i][j - 1]; }
-            else { field[i][j].neighbors["LEFT"] = nullptr; }
+            if (j - 1 >= 0) { field[i][j].neighbors[LEFT] = &field[i][j - 1]; }
+            else { field[i][j].neighbors[LEFT] = nullptr; }
 
-            if (j + 1 <= 4) { field[i][j].neighbors["RIGHT"] = &field[i][j + 1]; }
-            else { field[i][j].neighbors["RIGHT"] = nullptr; } 
+            if (j + 1 <= 4) { field[i][j].neighbors[RIGHT] = &field[i][j + 1]; }
+            else { field[i][j].neighbors[RIGHT] = nullptr; } 
         }
     }
     //Перевірка
@@ -131,147 +133,106 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
     }
 }
 
+//Функції moveUp та moveDown об'єднані в одну moveVertical що приймає додаткову змінну типу direction
+void moveVertical(cell field[5][5], vector<cell>& freeCells,direction dir) {
 
-void moveUp(cell field[5][5], vector<cell>& freeCells){
-    for (int i = 1; i < 5; i++) {
+    int startRow = 1; //Визначаю за замовчуванням змінні для руху вгору
+    int endRow = 4;
+    int step = 1;
+
+    if (dir == DOWN) { //Перевіряю чи рухаємося вниз
+        startRow = 3;
+        endRow = 0;
+        step = -1;
+    }
+
+    for (int i = startRow; i != endRow + step; i += step) {
         for (int j = 0; j < 5; j++) {
             if (field[i][j].filled) {
                 int k = i;
-                while (k - 1 >= 0 && (!field[k - 1][j].filled || (field[k - 1][j].number == field[k][j].number))) {
-                    if (!field[k - 1][j].filled) {
-                        field[k - 1][j].number = field[k][j].number;
-                        field[k - 1][j].filled = true;
+                while ((dir == UP ? k - 1 >= 0 : k + 1 < 5) && 
+                    (!field[dir == UP ? k - 1 : k + 1][j].filled || (field[dir == UP ? k - 1 : k + 1][j].number == field[k][j].number))) {
+                    if (!field[dir == UP ? k - 1 : k + 1][j].filled) {
+                        field[dir == UP ? k - 1 : k + 1][j].number = field[k][j].number;
+                        field[dir == UP ? k - 1 : k + 1][j].filled = true;
                         field[k][j].number = 0;
                         field[k][j].filled = false;
-                    } else if (field[k - 1][j].number == field[k][j].number) {
-                        // Злиття клітин, якщо вони мають однакові значення
-                        field[k - 1][j].number *= 2;
-                        field[k - 1][j].filled = true;
-                        field[k][j].number = 0;
-                        field[k][j].filled = false;
-                        break;  // Зупинка після злиття, щоб уникнути подвійного злиття
                     }
-                    k--;
+                    else if (field[dir == UP ? k - 1 : k + 1][j].number == field[k][j].number) {
+                        field[dir == UP ? k - 1 : k + 1][j].number *= 2;
+                        field[dir == UP ? k - 1 : k + 1][j].filled = true;
+                        field[k][j].number = 0;
+                        field[k][j].filled = false;
+                        break;
+                    }
+                    k += (dir == UP ? -1 : 1);
                 }
             }
         }
     }
     checkFreeCells(freeCells);
-    addFreeCells(field,freeCells);
-    addNumber(field, freeCells);
-    printField(field);
-}
-void moveDown(cell field[5][5], vector<cell>& freeCells) {
-    for (int i = 3; i >= 0; i--) {
-        for (int j = 4; j >= 0; j--) {
-            if (field[i][j].filled) {
-                int k = i;
-                while (k + 1 < 5 && (!field[k + 1][j].filled || (field[k + 1][j].number == field[k][j].number))) {
-                    if (!field[k + 1][j].filled) {
-                        field[k + 1][j].number = field[k][j].number;
-                        field[k + 1][j].filled = true;
-                        field[k][j].number = 0;
-                        field[k][j].filled = false;
-                    } else if (field[k + 1][j].number == field[k][j].number) {
-                        // Злиття клітин, якщо вони мають однакові значення
-                        field[k + 1][j].number *= 2;
-                        field[k + 1][j].filled = true;
-                        field[k][j].number = 0;
-                        field[k][j].filled = false;
-                        break;  // Зупинка після злиття, щоб уникнути подвійного злиття
-                    }
-                    k++;
-                }
-            }
-        }
-    }
-    checkFreeCells(freeCells);
-    addFreeCells(field,freeCells);
-    addNumber(field, freeCells);
-    printField(field);
-}
-void moveLeft(cell field[5][5], vector<cell>& freeCells){
-    for (int i = 0; i < 5; i++) {
-        for (int j = 1; j < 5; j++) {
-            if (field[i][j].filled) {
-                int k = j;
-                while (k - 1 >= 0 && (!field[i][k - 1].filled || (field[i][k - 1].number == field[i][k].number))) {
-                    if (!field[i][k - 1].filled) {
-                        field[i][k - 1].number = field[i][k].number;
-                        field[i][k - 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                    } else if (field[i][k - 1].number == field[i][k].number) {
-                        // Злиття клітин, якщо вони мають однакові значення
-                        field[i][k - 1].number *= 2;
-                        field[i][k - 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                        break;  // Зупинка після злиття, щоб уникнути подвійного злиття
-                    }
-                    k--;
-                }
-            }
-        }
-    }
-    checkFreeCells(freeCells);
-    addFreeCells(field,freeCells);
-    addNumber(field, freeCells);
-    printField(field);
-}
-void moveRight(cell field[5][5], vector<cell>& freeCells){
-    for (int i = 4; i >= 0; i--) {
-        for (int j = 3; j >= 0; j--) {
-            if (field[i][j].filled) {
-                int k = j;
-                while (k + 1 < 5 && (!field[i][k + 1].filled || (field[i][k + 1].number == field[i][k].number))) {
-                    if (!field[i][k + 1].filled) {
-                        field[i][k + 1].number = field[i][k].number;
-                        field[i][k + 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                    } else if (field[i][k + 1].number == field[i][k].number) {
-                        // Злиття клітин, якщо вони мають однакові значення
-                        field[i][k + 1].number *= 2;
-                        field[i][k + 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                        break;  // Зупинка після злиття, щоб уникнути подвійного злиття
-                    }
-                    k++;
-                }
-            }
-        }
-    }
-    checkFreeCells(freeCells);
-    addFreeCells(field,freeCells);
+    addFreeCells(field, freeCells);
     addNumber(field, freeCells);
     printField(field);
 }
 
-bool checkMove(cell field[5][5], vector<cell>& freeCells){
-//    int countzero = 0;
-//    for(int k = 0; k < 5; k++){
-//        for(int m = 0; m < 5; m++){
-//            countzero++;
-//        }
-//    }
-    if (freeCells.empty()){
-        for (int i = 0; i < 5; i++){
-            for (int j = 0; j < 5; j++){
-                if ((i - 1 >= 0 && field[i][j].number == field[i - 1][j].number) ||
-                    (i + 1 < 5 && field[i][j].number == field[i + 1][j].number) ||
-                    (j - 1 >= 0 && field[i][j].number == field[i][j - 1].number) ||
-                    (j + 1 < 5 && field[i][j].number == field[i][j + 1].number)) {
-                    return true;
+//Функції moveLeft та moveRight об'єднані в одну moveVertical що приймає додаткову змінну типу direction
+void moveHorizontal(cell field[5][5], vector<cell>& freeCells, direction dir){
+    int startRow = 1; //Визначаю за замовчуванням змінні для руху вліво
+    int endRow = 4;
+    int step = 1;
+
+    if (dir == RIGHT) { //Перевіряю чи рухаємося вправо
+        startRow = 3;
+        endRow = 0;
+        step = -1;
+    }
+
+    for (int i = 0; i < 5; i++) {
+        for (int j = startRow; j != endRow + step; j += step) {
+            if (field[i][j].filled) {
+                int k = j;
+                while ((dir == LEFT ? k - 1 >= 0 : k + 1 < 5)
+                    && (!field[i][dir == LEFT ? k - 1 : k + 1].filled || (field[i][dir == LEFT ? k - 1 : k + 1].number == field[i][k].number))) {
+                    if (!field[i][dir == LEFT ? k - 1 : k + 1].filled) {
+                        field[i][dir == LEFT ? k - 1 : k + 1].number = field[i][k].number;
+                        field[i][dir == LEFT ? k - 1 : k + 1].filled = true;
+                        field[i][k].number = 0;
+                        field[i][k].filled = false;
+                    }
+                    else if (field[i][dir == LEFT ? k - 1 : k + 1].number == field[i][k].number) {
+                        field[i][dir == LEFT ? k - 1 : k + 1].number *= 2;
+                        field[i][dir == LEFT ? k - 1 : k + 1].filled = true;
+                        field[i][k].number = 0;
+                        field[i][k].filled = false;
+                        break;
+                    }
+                    k += (dir == LEFT ? -1 : 1);
                 }
             }
         }
-        cout << "You are loser" << endl;
-        return false;
-    }else{
-        return true;
     }
+    checkFreeCells(freeCells);
+    addFreeCells(field, freeCells);
+    addNumber(field, freeCells);
+    printField(field);
+}
+
+//Функція checkMove виправлена і тепер перевіряє можливість ходу за допомогою cell.neighbors
+bool checkMove(cell field[5][5], vector<cell>& freeCells){
+    vector<direction> dir = { UP, DOWN, LEFT, RIGHT };
+    for (int i = 0; i < 5; i++) {
+        for (int j = 0; j < 5; j++) {
+            for (direction d : dir) {
+                if (field[i][j].neighbors[d] != nullptr) {
+                    if (field[i][j].neighbors[d]->number == 0 || field[i][j].neighbors[d]->number == field[i][j].number) {
+                        return true;
+                    }
+                }
+            }
+        }
+    }
+    return false;
 }
 bool checkWin(cell field[5][5]){
     bool isWin = false;
@@ -310,20 +271,18 @@ void move(cell field[5][5], vector<cell>& freeCells){
         if (input == "end") {
             break;
         }else if(input == "W" || input == "w"){
-            moveUp(field,freeCells);
+            moveVertical(field, freeCells, UP);
+            //moveUp(field,freeCells);
         }else if(input == "S" || input == "s"){
-            moveDown(field,freeCells);
+            moveVertical(field, freeCells, DOWN);
+            //moveDown(field,freeCells);
         }else if(input == "D" || input == "d"){
-            moveRight(field,freeCells);
+            moveHorizontal(field, freeCells, RIGHT);
+            //moveRight(field,freeCells);
         }else if(input == "A" || input == "a"){
-            moveLeft(field,freeCells);
+            moveHorizontal(field, freeCells, LEFT);
+            //moveLeft(field,freeCells);
         }
-        //Закоментований шматочок виводить сміття, яке потрібно було для перевірки
-        //cout << freeCells.size() << endl;
-        //for(int i = 0; i<freeCells.size();i++){
-        //    cout << '[' << freeCells[i].i << ',' << freeCells[i].j << ',' << freeCells[i].filled << ',' << freeCells[i].number << ']' << ' ';
-        //}
-        //cout << endl;
     }
 
 }
@@ -335,6 +294,7 @@ void game(){
     initialization(field, freeCells); //Додана функція ініціалізації поля (а саме клітинок у ньому)
     field[1][2].number = 2; //Перше значення завжди в одному й тому ж місці і завжди 2 (спробуй виправити)
     field[1][2].filled = true;
+    
     checkFreeCells(freeCells);
     addFreeCells(field,freeCells);
     addNumber(field, freeCells);
