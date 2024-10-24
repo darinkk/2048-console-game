@@ -17,6 +17,21 @@ struct cell{
     int j;
     bool filled;
     map<direction, cell*> neighbors; //Додано мап з сусідами
+
+    bool isMovable() {
+        for (const auto& p : neighbors) {
+            if (p.second != nullptr) {
+                if (p.second->number == 0 || this->number == p.second->number) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+    bool haveWinNumber() {
+        if (number == 2048) { return true; }
+        else { return false; }
+    }
 };
 
 //Нова функція initialization
@@ -29,7 +44,6 @@ void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
             field[i][j].filled = false;
             freeCells.push_back(field[i][j]);
 
-            //field[i][j].neighbors[UP] = [i,j, &field]() {if (i - 1 >= 0) { return &field[i - 1][j]; } else { return nullptr; } };
             if (i - 1 >= 0) { field[i][j].neighbors[UP] = &field[i - 1][j]; }
             else { field[i][j].neighbors[UP] = nullptr; }
 
@@ -43,11 +57,6 @@ void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
             else { field[i][j].neighbors[RIGHT] = nullptr; } 
         }
     }
-    //Перевірка
-    //cout << endl << field[1][3].neighbors["UP"]->i << field[1][3].neighbors["UP"]->j;
-    //cout << endl << field[1][3].neighbors["DOWN"]->i << field[1][3].neighbors["DOWN"]->j;
-    //cout << endl << field[1][3].neighbors["LEFT"]->i << field[1][3].neighbors["LEFT"]->j;
-    //cout << endl << field[1][3].neighbors["RIGHT"]->i << field[1][3].neighbors["RIGHT"]->j << endl;
 }
 
 //Нова функція printRules та трохи змінена printField
@@ -73,36 +82,20 @@ void printField(cell field[5][5]){
 }
 
 int createNumber(){
-    int randomNumber = (rand() % 2 + 1) * 2;
-    return randomNumber;
+    return (rand() % 2 + 1) * 2;
 }
 bool isInVector(int n, int b,vector<cell>& freeCells){
-    bool isInVector = false;
     for(cell k : freeCells){
         if(k.i == n && k.j == b){
-            isInVector = true;
+            return true;
             break;
         }
     }
-    return isInVector;
+    return false;
 }
 void checkFreeCells(vector<cell>& freeCells){
     freeCells.erase(remove_if(freeCells.begin(), freeCells.end(),
                               [](const cell& c) { return c.filled; }), freeCells.end());
-    bool isOllFree = false;
-    if (freeCells.size() > 1){
-        while (!isOllFree){
-            for(int i = 0; i < freeCells.size(); i++){
-                if (freeCells[i].filled){
-                    freeCells.erase(freeCells.begin()+i);
-                    break;
-                }else {
-                    isOllFree = true;
-                    break;
-                }
-            }
-        }
-    } else {isOllFree = true;}
 }
 void addFreeCells(cell field[5][5], vector<cell>& freeCells){
     for (int a = 0; a <= 4; a++){
@@ -175,7 +168,6 @@ void moveVertical(cell field[5][5], vector<cell>& freeCells,direction dir) {
     addNumber(field, freeCells);
     printField(field);
 }
-
 //Функції moveLeft та moveRight об'єднані в одну moveVertical що приймає додаткову змінну типу direction
 void moveHorizontal(cell field[5][5], vector<cell>& freeCells, direction dir){
     int startRow = 1; //Визначаю за замовчуванням змінні для руху вліво
@@ -218,32 +210,29 @@ void moveHorizontal(cell field[5][5], vector<cell>& freeCells, direction dir){
     printField(field);
 }
 
-//Функція checkMove виправлена і тепер перевіряє можливість ходу за допомогою cell.neighbors
-bool checkMove(cell field[5][5], vector<cell>& freeCells){
-    vector<direction> dir = { UP, DOWN, LEFT, RIGHT };
+//Функція checkMove виправлена і тепер перевіряє можливість ходу за допомогою cell.neighbors та методу клітинки isMovable
+bool checkMove(cell field[5][5], vector<cell>& freeCells){ 
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
-            for (direction d : dir) {
-                if (field[i][j].neighbors[d] != nullptr) {
-                    if (field[i][j].neighbors[d]->number == 0 || field[i][j].neighbors[d]->number == field[i][j].number) {
-                        return true;
-                    }
-                }
+            if (field[i][j].isMovable()) {
+                return true;
+                break;
             }
         }
     }
     return false;
 }
+
+//Функція checkWin також тепер використовує метод клітинки haveWinNumber
 bool checkWin(cell field[5][5]){
-    bool isWin = false;
     for(int i = 0; i < 5; i++){
         for(int j = 0; j < 5; j++){
-            if(field[i][j].number == 2048){
-                isWin = true;
+            if(field[i][j].haveWinNumber()){
+                return true;
             }
         }
     }
-    return isWin;
+    return false;
 }
 void message(bool state){
     if(state){
@@ -272,19 +261,14 @@ void move(cell field[5][5], vector<cell>& freeCells){
             break;
         }else if(input == "W" || input == "w"){
             moveVertical(field, freeCells, UP);
-            //moveUp(field,freeCells);
         }else if(input == "S" || input == "s"){
             moveVertical(field, freeCells, DOWN);
-            //moveDown(field,freeCells);
         }else if(input == "D" || input == "d"){
             moveHorizontal(field, freeCells, RIGHT);
-            //moveRight(field,freeCells);
         }else if(input == "A" || input == "a"){
             moveHorizontal(field, freeCells, LEFT);
-            //moveLeft(field,freeCells);
         }
     }
-
 }
 
 
@@ -292,9 +276,9 @@ void game(){
     cell field[5][5];
     vector<cell> freeCells;
     initialization(field, freeCells); //Додана функція ініціалізації поля (а саме клітинок у ньому)
-    field[1][2].number = 2; //Перше значення завжди в одному й тому ж місці і завжди 2 (спробуй виправити)
+    field[1][2].number = createNumber(); 
     field[1][2].filled = true;
-    
+
     checkFreeCells(freeCells);
     addFreeCells(field,freeCells);
     addNumber(field, freeCells);
