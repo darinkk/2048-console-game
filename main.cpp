@@ -32,6 +32,27 @@ struct cell{
         if (number == 2048) { return true; }
         else { return false; }
     }
+
+    //Новий метод для руху клітинок
+    void moveCell(direction dir) {
+        if (neighbors[dir] == nullptr) {
+            return;
+        }
+        if (!neighbors[dir]->filled) {
+            neighbors[dir]->number = number;
+            neighbors[dir]->filled = true;
+            number = 0;
+            filled = false;
+            neighbors[dir]->moveCell(dir);
+        }
+        else if (neighbors[dir]->number == number) {
+            neighbors[dir]->number *= 2;
+            neighbors[dir]->filled = true;
+            number = 0;
+            filled = false;
+            return;
+        }
+    }
 };
 
 //Нова функція initialization
@@ -142,24 +163,7 @@ void moveVertical(cell field[5][5], vector<cell>& freeCells,direction dir) {
     for (int i = startRow; i != endRow + step; i += step) {
         for (int j = 0; j < 5; j++) {
             if (field[i][j].filled) {
-                int k = i;
-                while ((dir == UP ? k - 1 >= 0 : k + 1 < 5) && 
-                    (!field[dir == UP ? k - 1 : k + 1][j].filled || (field[dir == UP ? k - 1 : k + 1][j].number == field[k][j].number))) {
-                    if (!field[dir == UP ? k - 1 : k + 1][j].filled) {
-                        field[dir == UP ? k - 1 : k + 1][j].number = field[k][j].number;
-                        field[dir == UP ? k - 1 : k + 1][j].filled = true;
-                        field[k][j].number = 0;
-                        field[k][j].filled = false;
-                    }
-                    else if (field[dir == UP ? k - 1 : k + 1][j].number == field[k][j].number) {
-                        field[dir == UP ? k - 1 : k + 1][j].number *= 2;
-                        field[dir == UP ? k - 1 : k + 1][j].filled = true;
-                        field[k][j].number = 0;
-                        field[k][j].filled = false;
-                        break;
-                    }
-                    k += (dir == UP ? -1 : 1);
-                }
+                field[i][j].moveCell(dir);
             }
         }
     }
@@ -183,24 +187,7 @@ void moveHorizontal(cell field[5][5], vector<cell>& freeCells, direction dir){
     for (int i = 0; i < 5; i++) {
         for (int j = startRow; j != endRow + step; j += step) {
             if (field[i][j].filled) {
-                int k = j;
-                while ((dir == LEFT ? k - 1 >= 0 : k + 1 < 5)
-                    && (!field[i][dir == LEFT ? k - 1 : k + 1].filled || (field[i][dir == LEFT ? k - 1 : k + 1].number == field[i][k].number))) {
-                    if (!field[i][dir == LEFT ? k - 1 : k + 1].filled) {
-                        field[i][dir == LEFT ? k - 1 : k + 1].number = field[i][k].number;
-                        field[i][dir == LEFT ? k - 1 : k + 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                    }
-                    else if (field[i][dir == LEFT ? k - 1 : k + 1].number == field[i][k].number) {
-                        field[i][dir == LEFT ? k - 1 : k + 1].number *= 2;
-                        field[i][dir == LEFT ? k - 1 : k + 1].filled = true;
-                        field[i][k].number = 0;
-                        field[i][k].filled = false;
-                        break;
-                    }
-                    k += (dir == LEFT ? -1 : 1);
-                }
+                field[i][j].moveCell(dir);
             }
         }
     }
