@@ -147,19 +147,33 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
     }
 }
 
-//Функції moveUp та moveDown об'єднані в одну moveVertical що приймає додаткову змінну типу direction
-void moveVertical(cell field[5][5], vector<cell>& freeCells,direction dir) {
+/*Логіка руху тепер реалізована за допомогою класів*/
+class Move { //Абстрактний класс Move
+public:
+    //direction dir;
+    virtual ~Move() {};
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
+};
 
-    int startRow = 1; //Визначаю за замовчуванням змінні для руху вгору
-    int endRow = 4;
-    int step = 1;
-
-    if (dir == DOWN) { //Перевіряю чи рухаємося вниз
-        startRow = 3;
-        endRow = 0;
-        step = -1;
+class MoveVertical : public Move { //Абстрактний класс MoveVertical що наслідує Move
+private:
+    direction dir;
+    int startRow; 
+    int endRow;
+    int step;
+public:
+    MoveVertical(direction d, int start, int end, int s) {
+        dir = d;
+        startRow = start;
+        endRow = end;
+        step = s;
     }
-
+    void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
+};
+//Визначаємо функцію moveCell за межами классу як функцію за замовчуванням для MoveVertical. 
+//Таким чином клас MoveVertical залишиться абстрактним і його елемент не можна буде створити, а у класах нащадках ми зможено не думблювати
+//велику частину коду яка ідентична для MoveUp та MoveDown
+void MoveVertical::moveCell(cell field[5][5], vector<cell>& freeCells) {
     for (int i = startRow; i != endRow + step; i += step) {
         for (int j = 0; j < 5; j++) {
             if (field[i][j].filled) {
@@ -171,31 +185,90 @@ void moveVertical(cell field[5][5], vector<cell>& freeCells,direction dir) {
     addFreeCells(field, freeCells);
     addNumber(field, freeCells);
     printField(field);
-}
-//Функції moveLeft та moveRight об'єднані в одну moveVertical що приймає додаткову змінну типу direction
-void moveHorizontal(cell field[5][5], vector<cell>& freeCells, direction dir){
-    int startRow = 1; //Визначаю за замовчуванням змінні для руху вліво
-    int endRow = 4;
-    int step = 1;
+}    
 
-    if (dir == RIGHT) { //Перевіряю чи рухаємося вправо
-        startRow = 3;
-        endRow = 0;
-        step = -1;
+class MoveHorizontal : public Move { //Абстрактний класс MoveVertical що наслідує Move
+ private:
+     direction dir;
+     int startRow;
+     int endRow;
+     int step;
+ public:
+     MoveHorizontal(direction d, int start, int end, int s) {
+         dir = d;
+         startRow = start;
+         endRow = end;
+         step = s;
+     }
+     void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
+ };
+ //Так само визначаємо функцію за замовчуванням для MoveHorizontal
+void MoveHorizontal::moveCell(cell field[5][5], vector<cell>& freeCells) {
+     for (int i = 0; i < 5; i++) {
+         for (int j = startRow; j != endRow + step; j += step) {
+             if (field[i][j].filled) {
+                 field[i][j].moveCell(dir);
+             }
+         }
+     }
+     checkFreeCells(freeCells);
+     addFreeCells(field, freeCells);
+     addNumber(field, freeCells);
+     printField(field);
+ }
+
+class MoveUp : public MoveVertical { //Клас MoveUp, що наслідується від MoveVertical та перевизначає функцію moveCell як функцію за замвчуванням для MoveVertical
+public:
+    MoveUp() : MoveVertical(UP, 1, 4, 1) {}
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
+       MoveVertical::moveCell(field, freeCells);
     }
+};
+class MoveDown : public MoveVertical { //Клас MoveDown, що наслідується від MoveVertical та перевизначає функцію moveCell як функцію за замвчуванням для MoveVertical
+public:                                //різниця від MoveUp тут тільки у ініціалізації значень
+    MoveDown() : MoveVertical(DOWN, 3, 0, -1) {}
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
+        MoveVertical::moveCell(field, freeCells);
+    }
+};
+//Класи MoveLeft та MoveRight аналогічні до MoveUp/MoveDown тільки наслідуються від MoveHorizontal, що має іншу реалізацію moveCell
+class MoveLeft : public MoveHorizontal { 
+public:                                
+    MoveLeft() : MoveHorizontal(LEFT, 1, 4, 1) {}
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
+        MoveHorizontal::moveCell(field, freeCells);
+    }
+};
+class MoveRight : public MoveHorizontal {
+public:
+    MoveRight() : MoveHorizontal(RIGHT, 3, 0, -1) {}
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
+        MoveHorizontal::moveCell(field, freeCells);
+    }
+};
 
-    for (int i = 0; i < 5; i++) {
-        for (int j = startRow; j != endRow + step; j += step) {
-            if (field[i][j].filled) {
-                field[i][j].moveCell(dir);
-            }
+class MoveFactory { 
+public:
+    static unique_ptr<Move> createMove(string dir) {
+        if (dir == "W" || dir == "w") {
+            return make_unique<MoveUp>();
+        }
+        else if (dir == "S" || dir == "s") {
+            return make_unique<MoveDown>();
+        }
+        else if (dir == "A" || dir == "a") {
+            return make_unique<MoveLeft>();
+        }
+        else if (dir == "D" || dir == "d") {
+            return make_unique<MoveRight>();
+        }
+        else {
+            return nullptr;
         }
     }
-    checkFreeCells(freeCells);
-    addFreeCells(field, freeCells);
-    addNumber(field, freeCells);
-    printField(field);
-}
+};
+
+/*Кінець логіки руху*/
 
 //Функція checkMove виправлена і тепер перевіряє можливість ходу за допомогою cell.neighbors та методу клітинки isMovable
 bool checkMove(cell field[5][5], vector<cell>& freeCells){ 
@@ -246,18 +319,14 @@ void move(cell field[5][5], vector<cell>& freeCells){
 
         if (input == "end") {
             break;
-        }else if(input == "W" || input == "w"){
-            moveVertical(field, freeCells, UP);
-        }else if(input == "S" || input == "s"){
-            moveVertical(field, freeCells, DOWN);
-        }else if(input == "D" || input == "d"){
-            moveHorizontal(field, freeCells, RIGHT);
-        }else if(input == "A" || input == "a"){
-            moveHorizontal(field, freeCells, LEFT);
+        }
+        else {
+            auto m = MoveFactory::createMove(input);
+            if (m == nullptr) { move(field, freeCells); }
+            m->moveCell(field, freeCells);
         }
     }
 }
-
 
 void game(){
     cell field[5][5];
