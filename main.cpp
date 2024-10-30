@@ -5,7 +5,7 @@
 #include <algorithm>
 #include <string>
 #include <map>
-#include <cstdlib> //Для очищення
+#include <cstdlib> 
 
 using namespace std;
 
@@ -55,7 +55,6 @@ struct cell{
     }
 };
 
-//Нова функція initialization
 void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
     for (int i = 0; i < 5; i++) { 
         for (int j = 0; j < 5; j++) {
@@ -79,8 +78,6 @@ void initialization(cell (&field)[5][5], vector<cell>& freeCells) {
         }
     }
 }
-
-//Нова функція printRules та трохи змінена printField
 void printRules() {
     cout << "Enter: " << endl
         << "    W - Move Up" << endl
@@ -101,7 +98,6 @@ void printField(cell field[5][5]){
     }
     cout << endl;
 }
-
 int createNumber(){
     return (rand() % 2 + 1) * 2;
 }
@@ -147,37 +143,40 @@ void addNumber(cell field[5][5], vector<cell>& freeCells){
     }
 }
 
+
 /*Логіка руху тепер реалізована за допомогою класів*/
 class Move { //Абстрактний класс Move
-public:
-    //direction dir;
-    virtual ~Move() {};
-    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
-};
-
-class MoveVertical : public Move { //Абстрактний класс MoveVertical що наслідує Move
-private:
-    direction dir;
-    int startRow; 
+protected:
+    int startRow;
     int endRow;
     int step;
+    direction dir;
 public:
-    MoveVertical(direction d, int start, int end, int s) {
-        dir = d;
+    Move(int start, int end, int s, direction d) {
         startRow = start;
         endRow = end;
         step = s;
+        dir = d;
     }
-    void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
+    virtual ~Move() {};
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
 };
-//Визначаємо функцію moveCell за межами классу як функцію за замовчуванням для MoveVertical. 
-//Таким чином клас MoveVertical залишиться абстрактним і його елемент не можна буде створити, а у класах нащадках ми зможено не думблювати
-//велику частину коду яка ідентична для MoveUp та MoveDown
-void MoveVertical::moveCell(cell field[5][5], vector<cell>& freeCells) {
-    for (int i = startRow; i != endRow + step; i += step) {
-        for (int j = 0; j < 5; j++) {
-            if (field[i][j].filled) {
-                field[i][j].moveCell(dir);
+void Move::moveCell(cell field[5][5], vector<cell>& freeCells) {
+    if (dir == UP || dir == DOWN) {
+        for (int i = startRow; i != endRow + step; i += step) {
+            for (int j = 0; j < 5; j++) {
+                if (field[i][j].filled) {
+                    field[i][j].moveCell(dir);
+                }
+            }
+        }
+    }
+    else {
+        for (int i = 0; i < 5; i++) {
+            for (int j = startRow; j != endRow + step; j += step) {
+                if (field[i][j].filled) {
+                    field[i][j].moveCell(dir);
+                }
             }
         }
     }
@@ -185,65 +184,39 @@ void MoveVertical::moveCell(cell field[5][5], vector<cell>& freeCells) {
     addFreeCells(field, freeCells);
     addNumber(field, freeCells);
     printField(field);
-}    
+}
 
-class MoveHorizontal : public Move { //Абстрактний класс MoveVertical що наслідує Move
- private:
-     direction dir;
-     int startRow;
-     int endRow;
-     int step;
- public:
-     MoveHorizontal(direction d, int start, int end, int s) {
-         dir = d;
-         startRow = start;
-         endRow = end;
-         step = s;
-     }
-     void moveCell(cell field[5][5], vector<cell>& freeCells) = 0;
- };
- //Так само визначаємо функцію за замовчуванням для MoveHorizontal
-void MoveHorizontal::moveCell(cell field[5][5], vector<cell>& freeCells) {
-     for (int i = 0; i < 5; i++) {
-         for (int j = startRow; j != endRow + step; j += step) {
-             if (field[i][j].filled) {
-                 field[i][j].moveCell(dir);
-             }
-         }
-     }
-     checkFreeCells(freeCells);
-     addFreeCells(field, freeCells);
-     addNumber(field, freeCells);
-     printField(field);
- }
-
-class MoveUp : public MoveVertical { //Клас MoveUp, що наслідується від MoveVertical та перевизначає функцію moveCell як функцію за замвчуванням для MoveVertical
+/*
+Усі класи тепер наслідуються від напряму від Move,
+так як для руху у будь якому напрямку ми маємо одну універсальну функцію
+класи MoveVertical/MoveHorizontal більше не потрібні.
+*/
+class MoveUp : public Move { 
 public:
-    MoveUp() : MoveVertical(UP, 1, 4, 1) {}
+    MoveUp() : Move(1, 4, 1, UP) {}
     virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
-       MoveVertical::moveCell(field, freeCells);
+       Move::moveCell(field, freeCells);
     }
-};
-class MoveDown : public MoveVertical { //Клас MoveDown, що наслідується від MoveVertical та перевизначає функцію moveCell як функцію за замвчуванням для MoveVertical
-public:                                //різниця від MoveUp тут тільки у ініціалізації значень
-    MoveDown() : MoveVertical(DOWN, 3, 0, -1) {}
-    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
-        MoveVertical::moveCell(field, freeCells);
-    }
-};
-//Класи MoveLeft та MoveRight аналогічні до MoveUp/MoveDown тільки наслідуються від MoveHorizontal, що має іншу реалізацію moveCell
-class MoveLeft : public MoveHorizontal { 
+}; 
+class MoveDown : public Move { 
 public:                                
-    MoveLeft() : MoveHorizontal(LEFT, 1, 4, 1) {}
+    MoveDown() : Move(3, 0, -1, DOWN) {}
     virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
-        MoveHorizontal::moveCell(field, freeCells);
+        Move::moveCell(field, freeCells);
     }
 };
-class MoveRight : public MoveHorizontal {
-public:
-    MoveRight() : MoveHorizontal(RIGHT, 3, 0, -1) {}
+class MoveLeft : public Move { 
+public:                                
+    MoveLeft() : Move(1, 4, 1, LEFT) {}
     virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
-        MoveHorizontal::moveCell(field, freeCells);
+        Move::moveCell(field, freeCells);
+    }
+};
+class MoveRight : public Move {
+public:
+    MoveRight() : Move(3, 0, -1, RIGHT) {}
+    virtual void moveCell(cell field[5][5], vector<cell>& freeCells) override {
+        Move::moveCell(field, freeCells);
     }
 };
 
@@ -270,7 +243,6 @@ public:
 
 /*Кінець логіки руху*/
 
-//Функція checkMove виправлена і тепер перевіряє можливість ходу за допомогою cell.neighbors та методу клітинки isMovable
 bool checkMove(cell field[5][5], vector<cell>& freeCells){ 
     for (int i = 0; i < 5; i++) {
         for (int j = 0; j < 5; j++) {
@@ -282,8 +254,6 @@ bool checkMove(cell field[5][5], vector<cell>& freeCells){
     }
     return false;
 }
-
-//Функція checkWin також тепер використовує метод клітинки haveWinNumber
 bool checkWin(cell field[5][5]){
     for(int i = 0; i < 5; i++){
         for(int j = 0; j < 5; j++){
